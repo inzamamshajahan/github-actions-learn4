@@ -77,7 +77,7 @@ jobs:
         host: ${{ secrets.EC2_HOST }} # The public IP/DNS of your EC2 instance (from GitHub Secrets)
         username: ${{ secrets.EC2_USERNAME }} # The username to SSH into EC2 with (from GitHub Secrets)
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }} # The private SSH key to authenticate (from GitHub Secrets)
-        port: ${{ secrets.EC2_PORT | default('22') }} # SSH port, defaults to 22 if secret not set
+        port: ${{ secrets.EC2_PORT }} # SSH port, defaults to 22 if secret not set
         script: | # The multi-line script/commands to execute on your EC2 instance
           set -e # This command ensures that the script will exit immediately if any command fails
           export APP_DIR="/opt/my_data_project_src_main" # Define a variable for the application directory on EC2
