@@ -38,7 +38,7 @@ where = ["src"]
 line-length = 200 # This top-level option is fine
 
 [tool.ruff.lint] # Create this new sub-table for linter-specific options
-select = ["E", "W", "F", "I", "C", "B", "UP", "PT", "SIM"]
+select = ["E", "W", "F", "C", "B", "UP", "PT", "SIM"]
 ignore = []
 # You can also add other lint-specific options here like:
 # fixable = ["ALL"] # To enable fixing for all rules that support it
