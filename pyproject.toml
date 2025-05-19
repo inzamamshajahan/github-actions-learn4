@@ -1,0 +1,59 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+#backend-path = ["."]
+
+[project]
+name = "my_data_project_src_main"
+version = "0.1.0"
+description = "A simple data transformation project (src/main.py) using pandas and numpy, with CI/CD via GitHub Actions and logging." # Updated description
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "Inzamam", email = "inzamamshajahan@gmail.com"},
+]
+dependencies = [
+    "pandas",
+    "numpy"
+]
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "ruff",
+    "bandit",
+    "safety",
+    "pre-commit",
+    "types-PyYAML",
+    "pandas-stubs", # Ensure a comma here if it's not the absolute last item before ]
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 200
+select = ["E", "W", "F", "I", "C", "B", "UP", "PT", "SIM"]
+ignore = []
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+plugins = ["numpy.typing.mypy_plugin"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --cov=main --cov-report=term-missing --cov-fail-under=70"
+testpaths = ["tests"]
+# Optional: Pytest log configuration can go here if needed
+# log_cli = true
+# log_cli_level = INFO
+
+[tool.bandit]

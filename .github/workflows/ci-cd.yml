@@ -1,0 +1,124 @@
+# .github/workflows/ci-cd.yml
+name: Python CI/CD - Data Script (src/main.py) with Logging
+
+# 1. Define when this workflow will run
+on:
+  push: # Trigger on every push event
+    branches: [ "main" ] # Specifically for pushes to the 'main' branch
+  pull_request: # Trigger on every pull request event
+    branches: [ "main" ] # Specifically for PRs targeting the 'main' branch
+
+# 2. Define the jobs in this workflow
+jobs:
+  # 3. First Job: Linting, Testing, and Analyzing the code
+  lint-test-analyze:
+    name: Lint, Test & Analyze # Display name for this job on GitHub
+    runs-on: ubuntu-latest    # Specifies the type of virtual machine to run this job on
+    strategy:
+      matrix: # Allows running this job multiple times with different Python versions
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"] # List of Python versions to test against
+
+    steps: # A sequence of tasks to be executed in this job
+    - name: Checkout code # Step 1: Get your repository code
+      uses: actions/checkout@v4 # Uses a pre-built GitHub Action to fetch the code
+
+    - name: Set up Python ${{ matrix.python-version }} # Step 2: Set up the specified Python version
+      uses: actions/setup-python@v4 # Uses a pre-built Action for Python setup
+      with:
+        python-version: ${{ matrix.python-version }} # Uses the Python version from the matrix
+        cache: 'pip' # Cache pip dependencies to speed up subsequent runs
+
+    - name: Install dependencies # Step 3: Install project dependencies
+      run: | # Executes shell commands
+        python -m pip install --upgrade pip
+        # Installs your project in editable mode and all its 'dev' dependencies
+        # (pytest, ruff, mypy, etc.) from pyproject.toml
+        pip install -e .[dev]
+
+    - name: Lint and Format Check with Ruff # Step 4: Run Ruff
+      run: |
+        ruff check .               # Check for linting issues
+        ruff format --check .      # Check if code is formatted correctly (doesn't change files)
+
+    - name: Static type checking with Mypy # Step 5: Run Mypy
+      # Mypy checks types in 'src' and 'tests' directories, using pyproject.toml for its config
+      run: mypy src tests --config-file pyproject.toml
+
+    - name: Security scan (code) with Bandit # Step 6: Run Bandit
+      # Bandit scans the 'src' directory for security issues, using pyproject.toml for its config
+      run: bandit -r src -c pyproject.toml
+
+    - name: Security scan (dependencies) with Safety # Step 7: Run Safety
+      run: |
+        # Safety checks your installed packages against a database of known vulnerabilities
+        pip freeze > current_requirements.txt # Get a list of all installed packages and their versions
+        safety check -r current_requirements.txt # Check this list
+
+    - name: Run tests with Pytest # Step 8: Run Pytest
+      # Pytest will discover and run tests from the 'tests' directory.
+      # It uses options from pyproject.toml (like code coverage settings).
+      run: pytest
+
+  # 4. Second Job: Deploying and Running the script on EC2
+  deploy-and-run-on-ec2:
+    name: Deploy and Run Script on EC2 # Display name
+    needs: lint-test-analyze # This job will ONLY run if the 'lint-test-analyze' job succeeds
+    # This job only runs on a PUSH event to the 'main' branch (not on pull requests, for example)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest # Runs on a GitHub-hosted Ubuntu runner
+
+    steps: # Sequence of tasks for this deployment job
+    - name: Checkout code # Step 1 (for deploy job): Get your repository code again
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2 and Run Script # Step 2 (for deploy job): Connect to EC2 and run commands
+      uses: appleboy/ssh-action@v1.0.0 # Uses a popular pre-built Action for SSH operations
+      with:
+        host: ${{ secrets.EC2_HOST }} # The public IP/DNS of your EC2 instance (from GitHub Secrets)
+        username: ${{ secrets.EC2_USERNAME }} # The username to SSH into EC2 with (from GitHub Secrets)
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }} # The private SSH key to authenticate (from GitHub Secrets)
+        port: ${{ secrets.EC2_PORT | default('22') }} # SSH port, defaults to 22 if secret not set
+        script: | # The multi-line script/commands to execute on your EC2 instance
+          set -e # This command ensures that the script will exit immediately if any command fails
+          export APP_DIR="/opt/my_data_project_src_main" # Define a variable for the application directory on EC2
+
+          echo "Creating application directory $APP_DIR on EC2..."
+          sudo mkdir -p $APP_DIR # Create the directory if it doesn't exist (needs sudo)
+          # Change ownership of the directory to the SSH user, so subsequent commands
+          # (like git clone) don't need sudo within this directory.
+          sudo chown ${{ secrets.EC2_USERNAME }}:${{ secrets.EC2_USERNAME }} $APP_DIR
+          cd $APP_DIR # Navigate into the application directory on EC2
+
+          echo "Cloning/updating repository on EC2..."
+          # If a .git directory doesn't exist (first deployment), clone the repository fresh.
+          if [ ! -d ".git" ]; then
+            git clone https://github.com/${{ github.repository }}.git . # Clone into current dir (.)
+          else # If repository already exists, update it
+            git remote set-url origin https://github.com/${{ github.repository }}.git # Ensure remote URL is correct
+            git fetch origin main --prune # Fetch latest changes from 'main', remove stale remote branches
+            git reset --hard origin/main # Force local 'main' to exactly match the remote 'main', discarding local changes
+            git clean -fdx # Remove any untracked files and directories (clean build state)
+          fi
+
+          echo "Setting up Python virtual environment on EC2..."
+          if [ ! -d "venv" ]; then # If 'venv' directory doesn't exist, create it
+            python3 -m venv venv
+          fi
+          source venv/bin/activate # Activate the virtual environment
+
+          echo "Installing runtime dependencies on EC2..."
+          pip install --upgrade pip
+          # Install pandas and numpy from your requirements.txt into the EC2's venv
+          pip install -r requirements.txt
+
+          echo "Running the data processing script on EC2..."
+          # Execute your main Python script.
+          # Its internal PROJECT_ROOT logic will correctly find/create the 'data' directory
+          # relative to $APP_DIR (e.g., /opt/my_data_project_src_main/data/).
+          python src/main.py
+
+          echo "Script execution finished on EC2."
+          echo "Data directory on EC2: $APP_DIR/data/"
+          # Remind where to check for output files on the EC2 instance
+          echo "Check $APP_DIR/data/sample_input.csv, $APP_DIR/data/processed_output.csv, and $APP_DIR/data/data_processing.log"
+          echo "Deployment and execution successful!"
