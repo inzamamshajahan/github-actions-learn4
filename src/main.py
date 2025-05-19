@@ -1,5 +1,5 @@
 # src/main.py
-import logging  # 1. Import the logging module
+import logging  # 1. Import the logging module.
 import os
 from typing import Optional
 
