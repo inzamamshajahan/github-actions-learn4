@@ -2,16 +2,17 @@
 import os
 import tempfile
 
-import main as main_module  # Import the module itself.
 import pandas as pd
 import pytest
+
+import main as main_module  # Import the module itself.
 from main import (  # PROJECT_ROOT is no longer directly imported here
     create_sample_dataframe,
     process_data,
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_df_for_test() -> pd.DataFrame:
     data = {
         "id": [1, 2, 3, 4, 5],
@@ -22,7 +23,7 @@ def sample_df_for_test() -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_data_dir(monkeypatch):  # Pytest's built-in monkeypatch fixture.
     """Creates a temporary directory for data files during tests and cleans up."""
     with tempfile.TemporaryDirectory() as tmpdir_path:
