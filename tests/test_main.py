@@ -23,7 +23,7 @@ def sample_df_for_test() -> pd.DataFrame:
 
 
 @pytest.fixture()
-def temp_data_dir(monkeypatch):  # Pytest's built-in monkeypatch fixture
+def temp_data_dir(monkeypatch):  # Pytest's built-in monkeypatch fixture.
     """Creates a temporary directory for data files during tests and cleans up."""
     with tempfile.TemporaryDirectory() as tmpdir_path:
         monkeypatch.setattr(main_module, "PROJECT_ROOT", tmpdir_path)
