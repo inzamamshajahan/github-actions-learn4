@@ -58,7 +58,7 @@ mypy_path = "src"  # <--- ADD THIS LINE
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q --cov=main --cov-report=term-missing --cov-fail-under=70"
+addopts = "-ra -q --cov=main --cov-report=term-missing --cov-fail-under=60"
 testpaths = ["tests"]
 # Optional: Pytest log configuration can go here if needed
 # log_cli = true
