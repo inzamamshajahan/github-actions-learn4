@@ -2,7 +2,7 @@
 import os
 import tempfile
 
-import main as main_module  # Import the module itself
+import main as main_module  # Import the module itself.
 import pandas as pd
 import pytest
 from main import (  # PROJECT_ROOT is no longer directly imported here
