@@ -35,10 +35,16 @@ dev = [
 where = ["src"]
 
 [tool.ruff]
-line-length = 200
+line-length = 200 # This top-level option is fine
+
+[tool.ruff.lint] # Create this new sub-table for linter-specific options
 select = ["E", "W", "F", "I", "C", "B", "UP", "PT", "SIM"]
 ignore = []
-[tool.ruff.format]
+# You can also add other lint-specific options here like:
+# fixable = ["ALL"] # To enable fixing for all rules that support it
+# unfixable = []
+
+[tool.ruff.format] # This sub-table remains the same
 quote-style = "double"
 indent-style = "space"
 
