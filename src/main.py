@@ -1,65 +1,69 @@
 # src/main.py
-import logging  # 1. Import the logging module.
+import logging
 import os
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 
-# --- Determine Project Root (same as before) ---
+# --- Determine Project Root ---
+# This is defined once at the module level.
+# When testing, your test fixture (temp_data_dir) will monkeypatch THIS variable
+# in the 'main_module' object.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# --- Define Default Paths (same as before) ---
-DEFAULT_INPUT_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "sample_input.csv")
-DEFAULT_OUTPUT_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "processed_output.csv")
-DEFAULT_LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "data", "data_processing.log")  # 2. Define log file path
+
+# --- Helper functions to dynamically get default paths ---
+# These functions will use the CURRENT value of PROJECT_ROOT when called.
+# This is key for testing, as PROJECT_ROOT will be patched by the test fixture.
+def get_default_input_path() -> str:
+    return os.path.join(PROJECT_ROOT, "data", "sample_input.csv")
+
+
+def get_default_output_path() -> str:
+    return os.path.join(PROJECT_ROOT, "data", "processed_output.csv")
+
+
+def get_default_log_path() -> str:
+    return os.path.join(PROJECT_ROOT, "data", "data_processing.log")
+
 
 # --- Configure Logging ---
-# 3. Get a logger instance. Using __name__ is a common practice,
-#    it gives the logger the name of the current module (e.g., 'main').
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # Get logger instance for this module
 
 
-# 4. This function sets up the logging configuration.
-#    It's called once, typically at the start of the script's execution.
 def setup_logging():
     """Configures the logging for the application."""
-    # Ensure the directory for the log file exists
-    log_dir = os.path.dirname(DEFAULT_LOG_FILE_PATH)
+    log_file_path = get_default_log_path()  # Use helper to get current log path
+    log_dir = os.path.dirname(log_file_path)
     os.makedirs(log_dir, exist_ok=True)
 
-    # Create a formatter: defines how log messages will look.
-    # Example: 2023-10-27 10:00:00,123 - main - INFO - This is a log message.
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    # Create a file handler: writes log messages to a file.
-    file_handler = logging.FileHandler(DEFAULT_LOG_FILE_PATH)
-    file_handler.setLevel(logging.DEBUG)  # Log DEBUG and higher messages to the file.
+    # File Handler
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
-    # Create a console handler: writes log messages to the console (stdout/stderr).
+    # Console Handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)  # Log INFO and higher messages to the console.
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
-    # Add the handlers to our logger.
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # Add handlers to the logger if they haven't been added already
+    # This prevents duplicate handlers if setup_logging is called multiple times (e.g., in tests)
+    if not logger.hasHandlers():
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
 
-    # Set the overall minimum logging level for the logger.
-    # If this is INFO, even if a handler is set to DEBUG, only INFO and above will pass through the logger.
-    # So, set this to the lowest level you want any handler to process.
-    logger.setLevel(logging.DEBUG)
-
-    # Prevent log messages from being propagated to the root logger if it has handlers,
-    # to avoid duplicate console output if the root logger is also configured.
-    logger.propagate = False
+    logger.setLevel(logging.DEBUG)  # Set overall logger level
+    logger.propagate = False  # Avoid duplicate logs from root logger
 
 
-# --- create_sample_dataframe (same as before, but could add logging if complex) ---
+# --- create_sample_dataframe (no changes needed other than using the existing logger) ---
 def create_sample_dataframe() -> pd.DataFrame:
     """Generates a sample Pandas DataFrame for demonstration."""
-    logger.debug("Creating sample DataFrame.")  # 5. Example of a debug log
+    logger.debug("Creating sample DataFrame.")
     data = {
         "id": range(1, 6),
         "category": ["A", "B", "A", "C", "B"],
@@ -71,39 +75,47 @@ def create_sample_dataframe() -> pd.DataFrame:
     return df
 
 
-# --- process_data (modified to use logger) ---
+# --- process_data (modified to use dynamic default paths) ---
 def process_data(input_csv_path: Optional[str] = None) -> pd.DataFrame:
     """
     Reads data from a CSV or generates sample data if not found,
     performs transformations, and returns the processed DataFrame.
     """
+    # Dynamically get the default input path using the current (possibly patched) PROJECT_ROOT
+    current_default_input_path = get_default_input_path()
+
+    # Ensure data directory exists (uses current PROJECT_ROOT)
     data_dir = os.path.join(PROJECT_ROOT, "data")
     os.makedirs(data_dir, exist_ok=True)
 
-    effective_input_path = input_csv_path if input_csv_path else DEFAULT_INPUT_CSV_PATH
+    effective_input_path = input_csv_path if input_csv_path else current_default_input_path
 
     try:
         if os.path.exists(effective_input_path):
-            logger.info(f"Reading data from: {effective_input_path}")  # 6. Replaced print with logger.info
+            logger.info(f"Reading data from: {effective_input_path}")
             df = pd.read_csv(effective_input_path)
         else:
-            logger.warning(f"Input file '{effective_input_path}' not found. Generating sample data.")  # 7. logger.warning
+            logger.warning(f"Input file '{effective_input_path}' not found. Generating sample data.")
             df = create_sample_dataframe()
-            df.to_csv(DEFAULT_INPUT_CSV_PATH, index=False)
-            logger.info(f"Sample data generated and saved to: {DEFAULT_INPUT_CSV_PATH}")
+            # Save to the current_default_input_path, which reflects patched PROJECT_ROOT in tests
+            df.to_csv(current_default_input_path, index=False)
+            logger.info(f"Sample data generated and saved to: {current_default_input_path}")
     except pd.errors.EmptyDataError:
         logger.error(f"Input file '{effective_input_path}' is empty. Cannot process.")
-        return pd.DataFrame()  # Return an empty DataFrame
+        return pd.DataFrame()
     except Exception as e:
         logger.error(
             f"Error reading or generating input data from '{effective_input_path}': {e}",
             exc_info=True,
         )
-        # exc_info=True will include traceback information in the log for unexpected errors.
-        return pd.DataFrame()  # Return an empty DataFrame
+        return pd.DataFrame()
 
-    logger.info("Original DataFrame head:")  # 8. Info log for DataFrame head
-    logger.info(f"\n{df.head().to_string()}")  # Using to_string() for better multi-line log output
+    if df.empty:  # Handle case where df might be empty after read/generation before transformations
+        logger.info("Input DataFrame is empty. No transformations will be applied.")
+        return df
+
+    logger.info("Original DataFrame head:")
+    logger.info(f"\n{df.head().to_string()}")
 
     # Perform transformations:
     logger.debug("Starting transformations.")
@@ -116,8 +128,11 @@ def process_data(input_csv_path: Optional[str] = None) -> pd.DataFrame:
     df_filtered = df[df["value1"] > 20].copy()
     logger.debug(f"Filtered DataFrame, {len(df_filtered)} rows remaining.")
 
-    df_filtered["value1_type"] = np.where(df_filtered["value1"] > 35, "High", "Medium")
-    logger.debug("Added 'value1_type' column.")
+    if not df_filtered.empty:  # Only add 'value1_type' if df_filtered is not empty
+        df_filtered["value1_type"] = np.where(df_filtered["value1"] > 35, "High", "Medium")
+        logger.debug("Added 'value1_type' column.")
+    else:
+        logger.debug("DataFrame became empty after filtering; 'value1_type' column not added.")
 
     logger.info("Processed DataFrame head (after filtering and adding 'value1_type'):")
     logger.info(f"\n{df_filtered.head().to_string()}")
@@ -125,28 +140,29 @@ def process_data(input_csv_path: Optional[str] = None) -> pd.DataFrame:
     return df_filtered
 
 
-# --- Main execution block (modified to use logger) ---
-if __name__ == "__main__":
-    setup_logging()  # 9. Call the logging setup function once.
-    logger.info("Script execution started.")  # 10. Log script start
+# --- Main execution block ---
+if __name__ == "__main__":  # pragma: no cover
+    setup_logging()  # Call the logging setup function once.
+    logger.info("Script execution started.")
 
-    # Output directory creation is already handled by setup_logging for the log file
-    # and by process_data for data files. This explicit one might be redundant
-    # but harmless if paths are consistent.
-    # os.makedirs(os.path.dirname(DEFAULT_OUTPUT_CSV_PATH), exist_ok=True)
+    # Get default paths dynamically for the main script execution
+    default_input_for_script = get_default_input_path()
+    default_output_for_script = get_default_output_path()
+
+    # Ensure output directory exists (process_data also does this for its needs)
+    os.makedirs(os.path.dirname(default_output_for_script), exist_ok=True)
 
     try:
-        processed_df = process_data(DEFAULT_INPUT_CSV_PATH)
+        processed_df = process_data(default_input_for_script)
 
         if not processed_df.empty:
-            processed_df.to_csv(DEFAULT_OUTPUT_CSV_PATH, index=False)
-            logger.info(f"Processed data successfully saved to: {DEFAULT_OUTPUT_CSV_PATH}")
+            processed_df.to_csv(default_output_for_script, index=False)
+            logger.info(f"Processed data successfully saved to: {default_output_for_script}")
         else:
             logger.info("No data to save after processing (DataFrame was empty or error occurred).")
     except Exception as e:
-        logger.critical(f"An unhandled error occurred during script execution: {e}", exc_info=True)  # 11. Log critical errors
-        # In a real scenario, you might exit with a non-zero status code here
+        logger.critical(f"An unhandled error occurred during script execution: {e}", exc_info=True)
         # import sys
-        # sys.exit(1)
+        # sys.exit(1) # Consider exiting with an error code for critical failures
 
-    logger.info("Script execution finished.")  # 12. Log script end
+    logger.info("Script execution finished.")
