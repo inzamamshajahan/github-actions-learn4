@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 # --- Determine Project Root ---
-# This is defined once at the module level.
+# This is defined once at the module level
 # When testing, your test fixture (temp_data_dir) will monkeypatch THIS variable
 # in the 'main_module' object.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
