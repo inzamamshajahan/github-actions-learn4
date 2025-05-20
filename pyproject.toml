@@ -15,8 +15,8 @@ authors = [
   {name = "Inzamam", email = "inzamamshajahan@gmail.com"},
 ]
 dependencies = [
-    "pandas==2.0.2",
-    "numpy==2.2.5"
+    "pandas==2.2.3",
+    "numpy==2.0.2"
 ]
 [project.optional-dependencies]
 dev = [
