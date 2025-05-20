@@ -28,7 +28,7 @@ dev = [
     "safety==3.5.1",
     "pre-commit==4.2.0",
     "types-PyYAML==6.0.12.20250516",
-    "pandas-stubs==2.2.3.250308", # Ensure a comma here if it's not the absolute last item before ]
+    "pandas-stubs==2.2.2.240807", # Ensure a comma here if it's not the absolute last item before ]
 ]
 
 [tool.setuptools.packages.find]
