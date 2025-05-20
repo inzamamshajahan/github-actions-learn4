@@ -22,7 +22,7 @@ dependencies = [
 dev = [
     "pytest==8.3.5",
     "pytest-cov",
-    "mypy==1.15.0",
+    "mypy==1.14.0",
     "ruff==0.11.10",
     "bandit==1.8.3",
     "safety==3.5.1",
