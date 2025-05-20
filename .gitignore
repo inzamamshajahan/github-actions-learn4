@@ -77,3 +77,4 @@ data/processed_output.csv
 *.log
 data/*.log # More specific if logs are always in data/
 documentation/
+directory_structure.txt

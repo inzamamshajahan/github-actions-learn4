@@ -15,20 +15,20 @@ authors = [
   {name = "Inzamam", email = "inzamamshajahan@gmail.com"},
 ]
 dependencies = [
-    "pandas",
-    "numpy"
+    "pandas==2.2.3",
+    "numpy==2.2.5"
 ]
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    "pytest==8.3.5",
     "pytest-cov",
-    "mypy",
-    "ruff",
-    "bandit",
-    "safety",
-    "pre-commit",
-    "types-PyYAML",
-    "pandas-stubs", # Ensure a comma here if it's not the absolute last item before ]
+    "mypy==1.15.0",
+    "ruff==0.11.10",
+    "bandit==1.8.3",
+    "safety==3.5.1",
+    "pre-commit==4.2.0",
+    "types-PyYAML==6.0.12.20250516",
+    "pandas-stubs==2.2.3.250308", # Ensure a comma here if it's not the absolute last item before ]
 ]
 
 [tool.setuptools.packages.find]
