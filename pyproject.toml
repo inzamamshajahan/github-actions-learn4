@@ -15,8 +15,8 @@ authors = [
   {name = "Inzamam", email = "inzamamshajahan@gmail.com"},
 ]
 dependencies = [
-    "pandas==2.0.3",
-    "numpy==2.0.2"
+    "pandas",
+    "numpy"
 ]
 [project.optional-dependencies]
 dev = [
@@ -27,8 +27,8 @@ dev = [
     "bandit==1.8.3",
     "safety==3.5.1",
     "pre-commit==4.2.0",
-    "types-PyYAML==6.0.12.20250516",
-    "pandas-stubs==2.2.2.240807", # Ensure a comma here if it's not the absolute last item before ]
+    "types-PyYAML",
+    "pandas-stubs", # Ensure a comma here if it's not the absolute last item before ]
 ]
 
 [tool.setuptools.packages.find]
